@@ -13,7 +13,7 @@ import csv
 import tempfile
 import shutil
 
-# ------------------ Цвета (тёмная тема) ------------------
+# цвета
 COLORS = {
     "bg": "#0d1117", "card": "#161b22", "card_dark": "#0d1117",
     "accent": "#58a6ff", "danger": "#f85149", "success": "#3fb950",
@@ -22,7 +22,7 @@ COLORS = {
 }
 
 
-# ------------------ Улучшенные звуки ------------------
+# звуки
 class SoundManager:
     @staticmethod
     def play_scan_start():
@@ -63,7 +63,7 @@ class SoundManager:
             pass
 
 
-# ------------------ ВЫСОКОПРОИЗВОДИТЕЛЬНАЯ БАЗА ДАННЫХ ------------------
+# бд
 class CheatDB:
 
     def protect_doomsday(self):
@@ -94,7 +94,7 @@ class CheatDB:
             found_dirs = []
             found_classes = []
 
-            # Проверка директорий (ВЫСОКИЙ ПРИОРИТЕТ)
+            # чек директорий
             if cheat_info["directories"]:
                 for directory in cheat_info["directories"]:
                     dir_lower = directory.lower()
@@ -103,11 +103,11 @@ class CheatDB:
                             found_dirs.append(directory)
                             conditions_met += 1
                             break
-                    if found_dirs:  # Нашли хотя бы одну директорию
+                    if found_dirs:
                         break
 
-            # Проверка классов (СРЕДНИЙ ПРИОРИТЕТ)
-            if cheat_info["classes"] and conditions_met < 2:  # Ищем классы только если мало условий
+            # чек классов
+            if cheat_info["classes"] and conditions_met < 2:
                 for class_name in cheat_info["classes"]:
                     class_lower = class_name.lower()
                     for filepath in file_list_lower:
@@ -115,19 +115,19 @@ class CheatDB:
                             found_classes.append(class_name)
                             conditions_met += 1
                             break
-                    if found_classes:  # Нашли хотя бы один класс
+                    if found_classes:
                         break
 
-            # Проверка веса (НИЗКИЙ ПРИОРИТЕТ)
-            if cheat_info["sizes_kb"] and conditions_met < 2:  # Ищем вес только если мало условий
+            # чек веса
+            if cheat_info["sizes_kb"] and conditions_met < 2:
                 file_size_rounded = round(file_size_kb)
                 for target in cheat_info["sizes_kb"]:
                     target_rounded = round(target)
-                    if abs(file_size_rounded - target_rounded) <= 2:  # ±2KB tolerance
+                    if abs(file_size_rounded - target_rounded) <= 2:
                         conditions_met += 1
                         break
 
-            # Если набрали достаточно условий
+
             min_required = cheat_info.get("min_conditions", 2)
             if conditions_met >= min_required:
                 detected_cheats.append({
@@ -150,7 +150,6 @@ class CheatDB:
         self._build_indexes()
 
     def _build_indexes(self):
-        """Строит индексы для ускорения поиска"""
         self._size_index.clear()
         self._dir_index.clear()
         self._class_index.clear()
@@ -175,7 +174,6 @@ class CheatDB:
                 self._class_index[class_key].append(cheat_name)
 
     def get_possible_cheats_by_size(self, file_size_kb):
-        """Быстрый поиск читов по размеру файла"""
         size_key = round(file_size_kb)
         possible_matches = set()
 
@@ -186,32 +184,31 @@ class CheatDB:
         return list(possible_matches)
 
     def get_possible_cheats_by_path_elements(self, file_list):
-        """Быстрый поиск по элементам путей - АГРЕССИВНЫЙ ПОИСК"""
         possible_matches = set()
 
-        # Проверяем все файлы для максимального покрытия
+
         for filepath in file_list:
             path_lower = filepath.lower()
 
-            # АГРЕССИВНЫЙ поиск по директориям
+
             for dir_key, cheat_names in self._dir_index.items():
                 if dir_key and len(dir_key) > 2 and dir_key in path_lower:
                     possible_matches.update(cheat_names)
 
-            # АГРЕССИВНЫЙ поиск по классам
+
             for class_key, cheat_names in self._class_index.items():
                 if class_key and len(class_key) > 2 and class_key in path_lower:
                     possible_matches.update(cheat_names)
 
-            # Дополнительно: поиск по частям путей для лучшего покрытия
+
             path_parts = path_lower.split('/')
             for part in path_parts:
-                if len(part) > 4:  # Ищем значимые части путей
-                    # Проверяем по директориям
+                if len(part) > 4:
+
                     for dir_key, cheat_names in self._dir_index.items():
                         if dir_key and dir_key in part:
                             possible_matches.update(cheat_names)
-                    # Проверяем по классам
+
                     for class_key, cheat_names in self._class_index.items():
                         if class_key and class_key in part:
                             possible_matches.update(cheat_names)
@@ -219,7 +216,7 @@ class CheatDB:
         return list(possible_matches)
 
     def load_from_rust_data(self):
-        """Загрузка данных из Rust кода"""
+
         self.cheat_database = {
             "DoomsDay": {
                 "directories": ["net/java/"],
@@ -618,7 +615,7 @@ class CheatDB:
         self.protect_doomsday()
 
     def update_from_google_sheets(self):
-        """Обновление базы данных из Google Sheets с ЗАЩИТОЙ DoomsDay"""
+        # подгрузка бд из гугл таблиц, сложна
         try:
             sheet_url = "https://docs.google.com/spreadsheets/d/1sEfDVLLO8UehREu2JQUCmzeueH7F_Yx_AzylENOqnHc/export?format=csv&gid=0"
             response = requests.get(sheet_url, timeout=30)
@@ -658,7 +655,6 @@ class CheatDB:
                 new_database = {}
                 updated_count = 0
 
-                # СОХРАНЯЕМ ОРИГИНАЛЬНЫЙ DOOMSDAY ДО ОБНОВЛЕНИЯ
                 original_doomsday = self.cheat_database.get("DoomsDay")
 
                 for row_num, row in enumerate(rows[1:], start=2):
@@ -667,7 +663,6 @@ class CheatDB:
 
                     cheat_name = row[name_idx].strip()
 
-                    # ЗАЩИТА: Пропускаем DoomsDay из Google Таблицы
                     if cheat_name.lower() == "doomsday":
                         continue
 
@@ -703,7 +698,6 @@ class CheatDB:
 
                 old_count = len(self.cheat_database)
 
-                # УДАЛЯЕМ ТОЛЬКО ТЕ ЧИТЫ, КОТОРЫХ НЕТ В НОВОЙ БАЗЕ (КРОМЕ DOOMSDAY)
                 cheats_to_remove = []
                 for cheat_name in self.cheat_database:
                     if cheat_name not in new_database and cheat_name.lower() != "doomsday":
@@ -712,11 +706,9 @@ class CheatDB:
                 for cheat_name in cheats_to_remove:
                     del self.cheat_database[cheat_name]
 
-                # ОБНОВЛЯЕМ СУЩЕСТВУЮЩИЕ И ДОБАВЛЯЕМ НОВЫЕ (КРОМЕ DOOMSDAY)
                 for cheat_name, cheat_data in new_database.items():
                     self.cheat_database[cheat_name] = cheat_data
 
-                # ВОССТАНАВЛИВАЕМ ОРИГИНАЛЬНЫЙ DOOMSDAY ЕСЛИ ОН БЫЛ УДАЛЕН
                 if original_doomsday and "DoomsDay" not in self.cheat_database:
                     self.cheat_database["DoomsDay"] = original_doomsday
 
@@ -826,7 +818,6 @@ class CheatDB:
             print(f"Ошибка создания бэкапа: {e}")
 
     def restore_backup(self, backup_file):
-        """Восстанавливает базу из бэкапа с защитой DoomsDay"""
         try:
             with open(backup_file, 'r', encoding='utf-8') as f:
                 backup_data = json.load(f)
@@ -834,7 +825,6 @@ class CheatDB:
             self.cheat_database = backup_data.get("database", {})
             self.last_update = backup_data.get("timestamp")
 
-            # ЗАЩИТА: Восстанавливаем оригинальный DoomsDay после восстановления бэкапа
             self.protect_doomsday()
 
             return True, f"База восстановлена! Записей: {len(self.cheat_database)}"
@@ -858,11 +848,9 @@ class CheatDB:
         }
 
     def validate_database(self):
-        """Проверяет целостность базы данных и защиту DoomsDay"""
         errors = []
         warnings = []
 
-        # ПРОВЕРКА ЗАЩИТЫ DOOMSDAY
         if "DoomsDay" not in self.cheat_database:
             errors.append("DoomsDay отсутствует в базе данных!")
         else:
@@ -897,7 +885,7 @@ class CheatDB:
         return errors, warnings
 
 
-# ------------------ ВЫСОКОПРОИЗВОДИТЕЛЬНЫЙ ДЕТЕКТОР ------------------
+# детектор
 class Detector:
 
     def simple_cheat_check(self, file_size_kb, file_list_lower, cheat_name, cheat_info):
@@ -939,10 +927,8 @@ class Detector:
                     conditions.append("weight")
                     break
 
-        # Упрощенная логика: достаточно директории ИЛИ класса
-        min_required = 1  # Минимум 1 условие
+        min_required = 1
 
-        # Если есть строгий режим, проверяем точное совпадение
         if cheat_info.get("strict_mode"):
             if cheat_info["directories"] and cheat_info["classes"]:
                 for directory in cheat_info["directories"]:
@@ -970,7 +956,6 @@ class Detector:
         self._file_cache = {}
 
     def find_jars(self, base):
-        """ОПТИМИЗИРОВАННЫЙ поиск JAR файлов"""
         jars = []
         ignored_dirs = {
             "Windows", "Program Files", "Program Files (x86)", "AppData\\Local\\Temp",
@@ -1021,7 +1006,6 @@ class Detector:
         return False
 
     def check_jar_fast(self, path):
-        """ИСПРАВЛЕННАЯ проверка JAR файла - поиск по директориям ИЛИ классам"""
         result = {
             "path": path,
             "name": os.path.basename(path),
@@ -1045,17 +1029,15 @@ class Detector:
                 file_list = [f.filename for f in jar.filelist]
                 file_list_lower = [f.lower() for f in file_list]
 
-            # Этап 1: Быстрый поиск по индексам
+
             possible_cheats_by_size = self.db.get_possible_cheats_by_size(file_size_kb)
             possible_cheats_by_path = self.db.get_possible_cheats_by_path_elements(file_list_lower)
 
-            # Объединяем возможные совпадения
             possible_cheats = set(possible_cheats_by_size + possible_cheats_by_path)
 
             if not possible_cheats:
                 return result
 
-            # Этап 2: Детальная проверка только возможных читов
             for cheat_name in possible_cheats:
                 cheat_info = self.active[cheat_name]
                 conditions_met = []
@@ -1063,14 +1045,12 @@ class Detector:
                 found_dirs = []
                 found_classes = []
 
-                # Проверка строгого режима и исключений
+
                 if cheat_info.get("strict_mode") and self.has_legit_libraries(file_list_lower,
                                                                               cheat_info["exclude_dirs"]):
                     continue
 
-                # ИСПРАВЛЕНИЕ: Проверяем директории ИЛИ классы как ОСНОВНОЙ критерий
 
-                # Проверка директорий
                 dir_found = False
                 if cheat_info["directories"]:
                     for directory in cheat_info["directories"]:
@@ -1086,7 +1066,7 @@ class Detector:
                     if dir_found:
                         conditions_met.append("directory")
 
-                # Проверка классов
+
                 class_found = False
                 if cheat_info["classes"]:
                     for class_name in cheat_info["classes"]:
@@ -1102,7 +1082,7 @@ class Detector:
                     if class_found:
                         conditions_met.append("class")
 
-                # Проверка веса (дополнительный критерий)
+
                 weight_found = False
                 if cheat_info["sizes_kb"]:
                     weight_found = self.check_weight_match(file_size_kb, cheat_info["sizes_kb"])
@@ -1110,12 +1090,12 @@ class Detector:
                         conditions_met.append("weight")
                         found_items.append(f"WEIGHT: {file_size_kb:.1f}KB")
 
-                # ИСПРАВЛЕНИЕ: Упрощенная логика детекции
+
                 min_required = cheat_info.get("min_conditions", 2)
                 is_detected = False
 
                 if cheat_info.get("strict_mode"):
-                    # Для строгого режима требуется точное совпадение директории+класса
+
                     strict_match_found = False
                     if cheat_info["directories"] and cheat_info["classes"]:
                         for directory in cheat_info["directories"]:
@@ -1138,22 +1118,22 @@ class Detector:
                             conditions_met.append("strict_class")
                             is_detected = True
                 else:
-                    # Для обычного режима: достаточно директории ИЛИ класса + дополнительное условие
+
                     has_main_condition = dir_found or class_found
                     has_additional_condition = weight_found or (dir_found and class_found)
 
                     if has_main_condition and (has_additional_condition or len(conditions_met) >= min_required):
                         is_detected = True
 
-                # ИСПРАВЛЕНИЕ: Альтернативный подход - если нашли хотя бы директорию ИЛИ класс, проверяем дополнительные условия
+
                 if not is_detected and (dir_found or class_found):
-                    # Если есть основной признак, проверяем достаточно ли условий
+
                     if len(conditions_met) >= min_required:
                         is_detected = True
-                    # Или если есть основной признак + вес
+
                     elif (dir_found or class_found) and weight_found:
                         is_detected = True
-                    # Или если нашли и директорию и класс
+
                     elif dir_found and class_found:
                         is_detected = True
 
@@ -1185,7 +1165,7 @@ class Detector:
         return result
 
     def scan(self, jars, progress_callback, log_callback):
-        """Сканирование с улучшенным логированием"""
+
         self.scanning = True
         self.stats = {"total": len(jars), "checked": 0, "found": 0, "clean": 0}
         self.results = []
@@ -1227,7 +1207,7 @@ class Detector:
             return False, f"Ошибка очистки кэша: {str(e)}"
 
 
-# ------------------ ПРОВЕРКА КОРЗИНЫ ------------------
+# чекаем корзинууу
 class RecycleChecker:
     def __init__(self):
         self.clear_history = []
@@ -1392,7 +1372,7 @@ class RecycleChecker:
         self.save_history()
 
 
-# ------------------ АКВАРИУМ ------------------
+# :)
 class Aquarium:
     def __init__(self, parent):
         self.window = tk.Toplevel(parent)
@@ -1533,7 +1513,7 @@ class Aquarium:
         self.window.after(50, self.animate)
 
 
-# ------------------ МЕНЕДЖЕР ИНСТРУМЕНТОВ ------------------
+# инструментс
 class ToolManager:
     @staticmethod
     def download_all_tools():
@@ -1588,7 +1568,6 @@ pause
             messagebox.showerror("Ошибка", f"Не удалось создать архив инструментов: {str(e)}")
 
 
-# ------------------ ГЛАВНОЕ ПРИЛОЖЕНИЕ ------------------
 class App:
     def __init__(self):
         self.detector = Detector()
@@ -2966,6 +2945,6 @@ class App:
         messagebox.showinfo("Быстрое сканирование", "Стандартные пути не найдены. Выберите путь вручную.")
 
 
-# ------------------ ЗАПУСК ПРИЛОЖЕНИЯ ------------------
+# стартуеммммммммммм
 if __name__ == "__main__":
     App()
